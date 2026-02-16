@@ -95,6 +95,10 @@ export async function refreshToken(): Promise<Result<AuthToken, string>> {
 }
 
 export function getRegion(): Region {
-  const config = readAuthConfig();
-  return config.ok ? config.value.region : 'us';
+  const regionRaw = process.env.COROS_REGION ?? 'us';
+  if (regionRaw === 'us' || regionRaw === 'eu' || regionRaw === 'cn') {
+    return regionRaw;
+  }
+  console.warn(`Invalid COROS_REGION "${regionRaw}", defaulting to "us"`);
+  return 'us';
 }
