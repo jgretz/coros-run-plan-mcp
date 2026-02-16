@@ -1,6 +1,7 @@
 {
   "name": "coros",
   "module": "src/index.ts",
+  "bin": "src/index.ts",
   "type": "module",
   "private": true,
   "scripts": {
