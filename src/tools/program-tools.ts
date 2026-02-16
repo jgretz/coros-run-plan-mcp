@@ -15,17 +15,13 @@ export function registerProgramTools(server: McpServer) {
       },
     },
     async ({ sportType, nameFilter }) => {
-      const result = await listPrograms();
+      const typeNum = sportType ? parseSportType(sportType) : undefined;
+      const result = await listPrograms(typeNum);
       if (!result.ok) {
         return { content: [{ type: 'text' as const, text: `Failed to list workouts: ${result.error}` }], isError: true };
       }
 
       let programs = result.value;
-
-      if (sportType) {
-        const typeNum = parseSportType(sportType);
-        programs = programs.filter((p) => p.sportType === typeNum);
-      }
 
       if (nameFilter) {
         const lower = nameFilter.toLowerCase();
