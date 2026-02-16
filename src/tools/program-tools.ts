@@ -1,8 +1,20 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { listPrograms, getProgram, createProgram, deletePrograms } from '../api/programs.ts';
-import { SPORT_TYPE_LABELS, EXERCISE_TEMPLATES, SORT_NO_BASE, SORT_NO_CHILD } from '../config.ts';
-import { ExerciseType, TargetType, IntensityType, type Exercise } from '../types.ts';
+import {
+  SPORT_TYPE_LABELS,
+  EXERCISE_TEMPLATES,
+  SORT_NO_BASE,
+  SORT_NO_CHILD,
+  EXERCISE_STATUS_ACTIVE,
+  REST_TYPE_DEFAULT,
+  DEFAULT_EQUIPMENT,
+  DEFAULT_PART,
+  DISTANCE_DISPLAY_MILES,
+  mapSportLabel,
+} from '../config.ts';
+import { ok, err } from '../utils.ts';
+import { ExerciseType, TargetType, IntensityType, type Exercise, type ExerciseStep, type IntervalGroup, type Result } from '../types.ts';
 
 const ExerciseSchema = z.object({
   type: z.enum(['warmup', 'training', 'cooldown', 'recovery']).describe('Exercise step type'),
@@ -19,19 +31,19 @@ const IntervalGroupSchema = z.object({
   recovery: ExerciseSchema.describe('The recovery interval'),
 });
 
-function mapTargetType(t: string): number {
-  const map: Record<string, number> = { open: TargetType.Open, time: TargetType.Time, distance: TargetType.Distance };
+export function mapTargetType(t: string): TargetType {
+  const map: Record<string, TargetType> = { open: TargetType.Open, time: TargetType.Time, distance: TargetType.Distance };
   return map[t] ?? TargetType.Open;
 }
 
-function mapIntensityType(t?: string): number {
+export function mapIntensityType(t?: string): IntensityType {
   if (!t || t === 'none') return IntensityType.None;
-  const map: Record<string, number> = { heart_rate: IntensityType.HeartRate, pace: IntensityType.Pace };
+  const map: Record<string, IntensityType> = { heart_rate: IntensityType.HeartRate, pace: IntensityType.Pace };
   return map[t] ?? IntensityType.None;
 }
 
-function mapExerciseType(t: string): number {
-  const map: Record<string, number> = {
+export function mapExerciseType(t: string): ExerciseType {
+  const map: Record<string, ExerciseType> = {
     warmup: ExerciseType.Warmup,
     training: ExerciseType.Training,
     cooldown: ExerciseType.Cooldown,
@@ -40,51 +52,133 @@ function mapExerciseType(t: string): number {
   return map[t] ?? ExerciseType.Training;
 }
 
-let nextTempId = Date.now();
 function tempId(): string {
-  return String(nextTempId++);
+  return crypto.randomUUID();
 }
 
-function buildExercise(
+export function buildExercise(
   sportType: number,
   step: z.infer<typeof ExerciseSchema>,
   sortNo: number,
-): Exercise {
+): Result<Exercise, string> {
   const template = EXERCISE_TEMPLATES[sportType]?.[step.type];
-  if (!template) throw new Error(`No template for sport ${sportType}, type ${step.type}`);
+  if (!template) return err(`No template for sport ${sportType}, type ${step.type}`);
 
-  return {
-    exerciseType: mapExerciseType(step.type) as Exercise['exerciseType'],
+  return ok({
+    exerciseType: mapExerciseType(step.type),
     originId: String(template.originId),
     id: tempId(),
     name: template.name,
     overview: template.overview,
     sortNo,
-    targetType: mapTargetType(step.targetType) as Exercise['targetType'],
+    targetType: mapTargetType(step.targetType),
     targetValue: step.targetValue,
-    intensityType: mapIntensityType(step.intensityType) as Exercise['intensityType'],
+    intensityType: mapIntensityType(step.intensityType),
     intensityValue: step.intensityValue ?? 0,
     intensityValueExtend: step.intensityValueExtend ?? 0,
     sets: 1,
     isGroup: false,
     groupId: '0',
-    sportType: sportType,
-    status: 1,
-    restType: 3,
+    sportType,
+    status: EXERCISE_STATUS_ACTIVE,
+    restType: REST_TYPE_DEFAULT,
     restValue: 0,
-    equipment: [1],
-    part: [0],
-    distanceDisplayUnit: 3,
-  };
+    equipment: [...DEFAULT_EQUIPMENT],
+    part: [...DEFAULT_PART],
+    distanceDisplayUnit: DISTANCE_DISPLAY_MILES,
+  });
+}
+
+export function buildExercises(
+  sportType: number,
+  opts: {
+    warmup?: ExerciseStep;
+    intervals?: IntervalGroup;
+    steadyBlocks?: ExerciseStep[];
+    cooldown?: ExerciseStep;
+  },
+): Result<Exercise[], string> {
+  const exercises: Exercise[] = [];
+  let sortIdx = 0;
+
+  if (opts.warmup) {
+    const result = buildExercise(sportType, { ...opts.warmup, type: 'warmup' }, sortIdx * SORT_NO_BASE);
+    if (!result.ok) return result;
+    exercises.push(result.value);
+    sortIdx++;
+  }
+
+  if (opts.intervals) {
+    const groupSortNo = sortIdx * SORT_NO_BASE;
+    const groupId = tempId();
+
+    exercises.push({
+      exerciseType: ExerciseType.Group,
+      originId: '0',
+      id: groupId,
+      name: '',
+      overview: '',
+      sortNo: groupSortNo,
+      targetType: TargetType.Open,
+      targetValue: 0,
+      intensityType: IntensityType.None,
+      intensityValue: 0,
+      intensityValueExtend: 0,
+      isGroup: true,
+      sets: opts.intervals.sets,
+      groupId: '0',
+      sportType,
+      status: EXERCISE_STATUS_ACTIVE,
+      restType: REST_TYPE_DEFAULT,
+      restValue: 0,
+      equipment: [...DEFAULT_EQUIPMENT],
+      part: [...DEFAULT_PART],
+      distanceDisplayUnit: DISTANCE_DISPLAY_MILES,
+    });
+
+    const trainingResult = buildExercise(sportType, { ...opts.intervals.training, type: 'training' }, groupSortNo + SORT_NO_CHILD);
+    if (!trainingResult.ok) return trainingResult;
+    trainingResult.value.groupId = groupId;
+    trainingResult.value.isGroup = false;
+    exercises.push(trainingResult.value);
+
+    const recoveryResult = buildExercise(sportType, { ...opts.intervals.recovery, type: 'recovery' }, groupSortNo + 2 * SORT_NO_CHILD);
+    if (!recoveryResult.ok) return recoveryResult;
+    recoveryResult.value.groupId = groupId;
+    recoveryResult.value.isGroup = false;
+    exercises.push(recoveryResult.value);
+
+    sortIdx++;
+  }
+
+  if (opts.steadyBlocks) {
+    for (const block of opts.steadyBlocks) {
+      const result = buildExercise(sportType, { ...block, type: 'training' }, sortIdx * SORT_NO_BASE);
+      if (!result.ok) return result;
+      exercises.push(result.value);
+      sortIdx++;
+    }
+  }
+
+  if (opts.cooldown) {
+    const result = buildExercise(sportType, { ...opts.cooldown, type: 'cooldown' }, sortIdx * SORT_NO_BASE);
+    if (!result.ok) return result;
+    exercises.push(result.value);
+    sortIdx++;
+  }
+
+  return ok(exercises);
 }
 
 export function registerProgramTools(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'list_workouts',
-    'List saved workouts from COROS Training Hub. Returns workout summaries.',
     {
-      sportType: z.enum(['run', 'bike']).optional().describe('Filter by sport type'),
-      nameFilter: z.string().optional().describe('Filter by name (case-insensitive substring match)'),
+      description: 'List saved workouts from COROS Training Hub. Returns workout summaries.',
+      inputSchema: {
+        sportType: z.enum(['run', 'bike']).optional().describe('Filter by sport type'),
+        nameFilter: z.string().optional().describe('Filter by name (case-insensitive substring match)'),
+      },
     },
     async ({ sportType, nameFilter }) => {
       const result = await listPrograms();
@@ -95,7 +189,7 @@ export function registerProgramTools(server: McpServer) {
       let programs = result.value;
 
       if (sportType) {
-        const typeNum = sportType === 'run' ? 1 : 2;
+        const typeNum = mapSportLabel(sportType);
         programs = programs.filter((p) => p.sportType === typeNum);
       }
 
@@ -108,18 +202,19 @@ export function registerProgramTools(server: McpServer) {
         ? 'No workouts found.'
         : programs
             .map((p) => `- ${p.name} (${SPORT_TYPE_LABELS[p.sportType] ?? 'Unknown'}, ID: ${p.id}, load: ${p.essence || p.trainingLoad})`)
-
             .join('\n');
 
       return { content: [{ type: 'text' as const, text }] };
     },
   );
 
-  server.tool(
+  server.registerTool(
     'get_workout',
-    'Get full details of a saved workout by ID, including all exercise steps.',
     {
-      id: z.string().describe('The workout ID'),
+      description: 'Get full details of a saved workout by ID, including all exercise steps.',
+      inputSchema: {
+        id: z.string().describe('The workout ID'),
+      },
     },
     async ({ id }) => {
       const result = await getProgram(id);
@@ -131,87 +226,28 @@ export function registerProgramTools(server: McpServer) {
     },
   );
 
-  server.tool(
+  server.registerTool(
     'create_workout',
-    'Create a new run or bike workout with structured exercise steps. Supports warmup, steady blocks, interval groups, and cooldown.',
     {
-      name: z.string().describe('Workout name'),
-      sportType: z.enum(['run', 'bike']).describe('Sport type'),
-      description: z.string().optional().describe('Workout description'),
-      warmup: ExerciseSchema.optional().describe('Warmup step'),
-      intervals: IntervalGroupSchema.optional().describe('Interval group (repeating training + recovery)'),
-      steadyBlocks: z.array(ExerciseSchema).optional().describe('Steady-state training blocks (non-interval)'),
-      cooldown: ExerciseSchema.optional().describe('Cooldown step'),
+      description: 'Create a new run or bike workout with structured exercise steps. Supports warmup, steady blocks, interval groups, and cooldown.',
+      inputSchema: {
+        name: z.string().describe('Workout name'),
+        sportType: z.enum(['run', 'bike']).describe('Sport type'),
+        description: z.string().optional().describe('Workout description'),
+        warmup: ExerciseSchema.optional().describe('Warmup step'),
+        intervals: IntervalGroupSchema.optional().describe('Interval group (repeating training + recovery)'),
+        steadyBlocks: z.array(ExerciseSchema).optional().describe('Steady-state training blocks (non-interval)'),
+        cooldown: ExerciseSchema.optional().describe('Cooldown step'),
+      },
     },
     async ({ name, sportType, description, warmup, intervals, steadyBlocks, cooldown }) => {
-      const sport = sportType === 'run' ? 1 : 2;
-      const exercises: Exercise[] = [];
-      let sortIdx = 0;
-
-      // warmup
-      if (warmup) {
-        exercises.push(buildExercise(sport, { ...warmup, type: 'warmup' }, sortIdx * SORT_NO_BASE));
-        sortIdx++;
+      const sport = mapSportLabel(sportType);
+      const exercisesResult = buildExercises(sport, { warmup, intervals, steadyBlocks, cooldown });
+      if (!exercisesResult.ok) {
+        return { content: [{ type: 'text' as const, text: `Failed to build workout: ${exercisesResult.error}` }], isError: true };
       }
 
-      // interval group — parent with id, children reference it via groupId
-      if (intervals) {
-        const groupSortNo = sortIdx * SORT_NO_BASE;
-        const groupId = tempId();
-
-        // group parent
-        exercises.push({
-          exerciseType: ExerciseType.Group,
-          originId: '0',
-          id: groupId,
-          name: '',
-          overview: '',
-          sortNo: groupSortNo,
-          targetType: TargetType.Open,
-          targetValue: 0,
-          intensityType: IntensityType.None,
-          intensityValue: 0,
-          intensityValueExtend: 0,
-          isGroup: true,
-          sets: intervals.sets,
-          groupId: '0',
-          sportType: sport,
-          status: 1,
-          restType: 3,
-          restValue: 0,
-          equipment: [1],
-          part: [0],
-          distanceDisplayUnit: 3,
-        });
-
-        // training child — groupId references the parent's id
-        const trainingEx = buildExercise(sport, { ...intervals.training, type: 'training' }, groupSortNo + SORT_NO_CHILD);
-        trainingEx.groupId = groupId;
-        trainingEx.isGroup = false;
-        exercises.push(trainingEx);
-
-        // recovery child
-        const recoveryEx = buildExercise(sport, { ...intervals.recovery, type: 'recovery' }, groupSortNo + 2 * SORT_NO_CHILD);
-        recoveryEx.groupId = groupId;
-        recoveryEx.isGroup = false;
-        exercises.push(recoveryEx);
-
-        sortIdx++;
-      }
-
-      // steady blocks
-      if (steadyBlocks) {
-        for (const block of steadyBlocks) {
-          exercises.push(buildExercise(sport, { ...block, type: 'training' }, sortIdx * SORT_NO_BASE));
-          sortIdx++;
-        }
-      }
-
-      // cooldown
-      if (cooldown) {
-        exercises.push(buildExercise(sport, { ...cooldown, type: 'cooldown' }, sortIdx * SORT_NO_BASE));
-        sortIdx++;
-      }
+      const exercises = exercisesResult.value;
 
       if (exercises.length === 0) {
         return { content: [{ type: 'text' as const, text: 'Workout must have at least one exercise step.' }], isError: true };
@@ -234,11 +270,13 @@ export function registerProgramTools(server: McpServer) {
     },
   );
 
-  server.tool(
+  server.registerTool(
     'delete_workout',
-    'Delete one or more saved workouts by ID.',
     {
-      programIds: z.array(z.string()).min(1).describe('Array of workout program IDs to delete'),
+      description: 'Delete one or more saved workouts by ID.',
+      inputSchema: {
+        programIds: z.array(z.string()).min(1).describe('Array of workout program IDs to delete'),
+      },
     },
     async ({ programIds }) => {
       const result = await deletePrograms(programIds);

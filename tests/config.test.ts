@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { REGION_URLS, EXERCISE_TEMPLATES, SORT_NO_BASE, SORT_NO_CHILD, SPORT_TYPE_LABELS } from './config.ts';
+import { REGION_URLS, EXERCISE_TEMPLATES, SORT_NO_BASE, SORT_NO_CHILD, SPORT_TYPE_LABELS, mapSportLabel } from '../src/config.ts';
 
 describe('REGION_URLS', () => {
   it('should have US region', () => {
@@ -56,5 +56,15 @@ describe('SPORT_TYPE_LABELS', () => {
   it('should label sport types', () => {
     expect(SPORT_TYPE_LABELS[1]).toBe('Run');
     expect(SPORT_TYPE_LABELS[2]).toBe('Bike');
+  });
+});
+
+describe('mapSportLabel', () => {
+  it('should map run to SportType.Run', () => {
+    expect(mapSportLabel('run')).toBe(1);
+  });
+
+  it('should map bike to SportType.Bike', () => {
+    expect(mapSportLabel('bike')).toBe(2);
   });
 });

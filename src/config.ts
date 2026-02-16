@@ -1,4 +1,18 @@
-import type { Region, ExerciseType } from './types.ts';
+import { SportType, type Region } from './types.ts';
+
+// API constants
+export const UNIT_IMPERIAL = 1;
+export const DISTANCE_DISPLAY_MILES = 3;
+export const PB_VERSION_PROGRAM = 8;
+export const PB_VERSION_SCHEDULE = 2;
+export const SCHEDULE_STATUS_ADD = 1;
+export const SCHEDULE_STATUS_DELETE = 3;
+export const EXERCISE_STATUS_ACTIVE = 1;
+export const REST_TYPE_DEFAULT = 3;
+export const DEFAULT_EQUIPMENT = [1] as const;
+export const DEFAULT_PART = [0] as const;
+export const ACCOUNT_TYPE_EMAIL = 2;
+export const QUERY_LIMIT = 100;
 
 export const REGION_URLS: Record<Region, string> = {
   us: 'https://teamapi.coros.com',
@@ -46,10 +60,6 @@ export const EXERCISE_TEMPLATES: Record<number, SportExerciseTemplates> = {
   },
 } as const;
 
-// Map exercise type enum to template key
-export const EXERCISE_TYPE_TEMPLATE_KEY: Record<number, keyof SportExerciseTemplates> = {
-  1: 'warmup',
-  2: 'training',
-  3: 'cooldown',
-  4: 'recovery',
-} as const;
+export function mapSportLabel(s: 'run' | 'bike'): SportType {
+  return s === 'run' ? SportType.Run : SportType.Bike;
+}

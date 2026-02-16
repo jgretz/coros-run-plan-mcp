@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { readAuthConfig } from './store.ts';
+import { readAuthConfig } from '../../src/auth/store.ts';
 
 describe('readAuthConfig', () => {
   const origEnv = { ...process.env };

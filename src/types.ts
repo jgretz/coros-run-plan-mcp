@@ -3,14 +3,6 @@ export type Result<T, E = Error> =
   | { ok: true; value: T }
   | { ok: false; error: E };
 
-export function ok<T>(value: T): Result<T, never> {
-  return { ok: true, value };
-}
-
-export function err<E>(error: E): Result<never, E> {
-  return { ok: false, error };
-}
-
 // Auth
 export type Region = 'us' | 'eu' | 'cn';
 
@@ -109,6 +101,7 @@ export type Program = {
   distance: number;
   duration: number;
   createTimestamp?: number;
+  idInPlan?: number;
 };
 
 // Program list item (from query endpoint)
@@ -152,31 +145,25 @@ export type ScheduleQueryResponse = {
   programs: Program[];
 };
 
-// Calculate response (bar chart data)
-export type CalculateResult = {
-  totalDistance: number;
-  totalDuration: number;
-  trainingLoad: number;
-};
-
-// Login request
-export type LoginRequest = {
-  account: string;
-  accountType: 2;
-  pwd: string;
-};
-
 // Login response data
 export type LoginData = {
   accessToken: string;
   userId: string;
 };
 
-// Schedule update version object
-export type ScheduleVersionObject = {
-  scheduleId: string;
-  programId: string;
-  day: string;
-  status: 1 | 3; // 1 = add, 3 = delete
-  sportType?: SportType;
+// Exercise step input (user-facing)
+export type ExerciseStep = {
+  type: 'warmup' | 'training' | 'cooldown' | 'recovery';
+  targetType: 'open' | 'time' | 'distance';
+  targetValue: number;
+  intensityType?: 'none' | 'heart_rate' | 'pace';
+  intensityValue?: number;
+  intensityValueExtend?: number;
+};
+
+// Interval group input (user-facing)
+export type IntervalGroup = {
+  sets: number;
+  training: ExerciseStep;
+  recovery: ExerciseStep;
 };

@@ -1,5 +1,7 @@
 import { apiGet, apiPost } from './client.ts';
-import { ok, err, type Result, type ScheduleQueryResponse, type Program } from '../types.ts';
+import { PB_VERSION_SCHEDULE, SCHEDULE_STATUS_ADD, SCHEDULE_STATUS_DELETE } from '../config.ts';
+import { ok, err } from '../utils.ts';
+import type { Result, ScheduleQueryResponse, Program } from '../types.ts';
 import { getProgram } from './programs.ts';
 
 export async function querySchedule(startDay: string, endDay: string): Promise<Result<ScheduleQueryResponse, string>> {
@@ -45,9 +47,9 @@ export async function scheduleWorkout(
     }],
     versionObjects: [{
       id: nextIdInPlan,
-      status: 1,
+      status: SCHEDULE_STATUS_ADD,
     }],
-    pbVersion: 2,
+    pbVersion: PB_VERSION_SCHEDULE,
   };
 
   const result = await apiPost<unknown>('/training/schedule/update', payload);
@@ -75,9 +77,9 @@ export async function unscheduleWorkout(
       id: String(entity.idInPlan),
       planProgramId: String(entity.planProgramId),
       planId: plan.id,
-      status: 3,
+      status: SCHEDULE_STATUS_DELETE,
     }],
-    pbVersion: 2,
+    pbVersion: PB_VERSION_SCHEDULE,
   };
 
   const result = await apiPost<unknown>('/training/schedule/update', payload);

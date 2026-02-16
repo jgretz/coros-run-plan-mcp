@@ -1,17 +1,19 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { querySchedule, scheduleWorkout, unscheduleWorkout } from '../api/schedule.ts';
-import { SPORT_TYPE_LABELS } from '../config.ts';
+import { SPORT_TYPE_LABELS, mapSportLabel } from '../config.ts';
 
 const DaySchema = z.string().regex(/^\d{8}$/, 'Day must be YYYYMMDD format');
 
 export function registerScheduleTools(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'get_calendar',
-    'Get scheduled workouts for a date range from the COROS training calendar.',
     {
-      startDay: DaySchema.describe('Start date in YYYYMMDD format'),
-      endDay: DaySchema.describe('End date in YYYYMMDD format'),
+      description: 'Get scheduled workouts for a date range from the COROS training calendar.',
+      inputSchema: {
+        startDay: DaySchema.describe('Start date in YYYYMMDD format'),
+        endDay: DaySchema.describe('End date in YYYYMMDD format'),
+      },
     },
     async ({ startDay, endDay }) => {
       const result = await querySchedule(startDay, endDay);
@@ -22,7 +24,7 @@ export function registerScheduleTools(server: McpServer) {
       const { entities, programs } = result.value;
 
       // programs are linked to entities via idInPlan = planProgramId
-      const programByIdInPlan = new Map(programs.map((p) => [String((p as Record<string, unknown>).idInPlan), p]));
+      const programByIdInPlan = new Map(programs.map((p) => [String(p.idInPlan), p]));
 
       if (!entities || entities.length === 0) {
         return { content: [{ type: 'text' as const, text: `No scheduled workouts between ${startDay} and ${endDay}.` }] };
@@ -42,16 +44,18 @@ export function registerScheduleTools(server: McpServer) {
     },
   );
 
-  server.tool(
+  server.registerTool(
     'schedule_workout',
-    'Add a saved workout to the COROS training calendar on a specific date.',
     {
-      programId: z.string().describe('The workout program ID to schedule (from list_workouts)'),
-      day: DaySchema.describe('Date to schedule the workout on (YYYYMMDD)'),
-      sportType: z.enum(['run', 'bike']).describe('Sport type of the workout'),
+      description: 'Add a saved workout to the COROS training calendar on a specific date.',
+      inputSchema: {
+        programId: z.string().describe('The workout program ID to schedule (from list_workouts)'),
+        day: DaySchema.describe('Date to schedule the workout on (YYYYMMDD)'),
+        sportType: z.enum(['run', 'bike']).describe('Sport type of the workout'),
+      },
     },
     async ({ programId, day, sportType }) => {
-      const sport = sportType === 'run' ? 1 : 2;
+      const sport = mapSportLabel(sportType);
       const result = await scheduleWorkout(programId, day, sport);
       if (!result.ok) {
         return { content: [{ type: 'text' as const, text: `Failed to schedule workout: ${result.error}` }], isError: true };
@@ -63,12 +67,14 @@ export function registerScheduleTools(server: McpServer) {
     },
   );
 
-  server.tool(
+  server.registerTool(
     'unschedule_workout',
-    'Remove a scheduled workout from the COROS training calendar. Requires the entity ID from get_calendar and the date range to locate it.',
     {
-      entityId: z.string().describe('The schedule entity ID (from get_calendar)'),
-      day: DaySchema.describe('Date the workout is scheduled on (YYYYMMDD)'),
+      description: 'Remove a scheduled workout from the COROS training calendar. Requires the entity ID from get_calendar and the date range to locate it.',
+      inputSchema: {
+        entityId: z.string().describe('The schedule entity ID (from get_calendar)'),
+        day: DaySchema.describe('Date the workout is scheduled on (YYYYMMDD)'),
+      },
     },
     async ({ entityId, day }) => {
       const result = await unscheduleWorkout(entityId, day, day);

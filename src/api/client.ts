@@ -1,12 +1,10 @@
 import { REGION_URLS } from '../config.ts';
-import { ok, err, type Result, type ApiResponse, type AuthToken } from '../types.ts';
-import { getToken, refreshToken } from '../auth/auth.ts';
-import { readAuthConfig } from '../auth/store.ts';
+import { ok, err, formatError, isApiSuccess } from '../utils.ts';
+import type { Result, ApiResponse, AuthToken } from '../types.ts';
+import { getToken, refreshToken, getRegion } from '../auth/auth.ts';
 
 function getBaseUrl(): string {
-  const config = readAuthConfig();
-  const region = config.ok ? config.value.region : 'us';
-  return REGION_URLS[region];
+  return REGION_URLS[getRegion()];
 }
 
 function authHeaders(token: AuthToken): Record<string, string> {
@@ -17,15 +15,20 @@ function authHeaders(token: AuthToken): Record<string, string> {
   };
 }
 
+type ApiError = {
+  message: string;
+  status?: number;
+};
+
 type RequestOptions = {
   method: 'GET' | 'POST';
-  path: string;
+  path: `/${string}`;
   body?: unknown;
   rawBody?: string; // pre-serialized JSON, bypasses JSON.stringify
   params?: Record<string, string>;
 };
 
-async function request<T>(opts: RequestOptions, token: AuthToken): Promise<Result<T, string>> {
+async function request<T>(opts: RequestOptions, token: AuthToken): Promise<Result<T, ApiError>> {
   const baseUrl = getBaseUrl();
   const url = new URL(`${baseUrl}${opts.path}`);
 
@@ -44,24 +47,23 @@ async function request<T>(opts: RequestOptions, token: AuthToken): Promise<Resul
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
-      return err(`HTTP ${response.status} ${response.statusText} at ${opts.path}: ${text}`);
+      return err({ message: `HTTP ${response.status} ${response.statusText} at ${opts.path}: ${text}`, status: response.status });
     }
 
     const data = (await response.json()) as ApiResponse<T>;
 
-    const debugData = Array.isArray(data.data) && data.data.length > 0
-      ? `array[${data.data.length}], first keys: ${Object.keys(data.data[0])}`
-      : `keys: ${Object.keys(data.data ?? {})}`;
-    console.error(`[coros] ${opts.method} ${opts.path} -> result: ${data.result ?? data.apiCode}, ${debugData}`);
-
-    if (data.result !== '0000' && data.apiCode !== '0000') {
-      return err(`API error at ${opts.path}: ${data.message} (code: ${data.result || data.apiCode})`);
+    if (!isApiSuccess(data)) {
+      return err({ message: `API error at ${opts.path}: ${data.message} (code: ${data.result || data.apiCode})` });
     }
 
     return ok(data.data);
   } catch (e) {
-    return err(`Request failed at ${opts.path}: ${e}`);
+    return err({ message: formatError(`Request failed at ${opts.path}`, e) });
   }
+}
+
+function mapResult<T>(result: Result<T, ApiError>): Result<T, string> {
+  return result.ok ? result : err(result.error.message);
 }
 
 // Authenticated request with auto-retry on 401
@@ -72,23 +74,23 @@ export async function apiRequest<T>(opts: RequestOptions): Promise<Result<T, str
   const result = await request<T>(opts, tokenResult.value);
 
   // retry once on auth error
-  if (!result.ok && result.error.includes('HTTP 401')) {
+  if (!result.ok && result.error.status === 401) {
     const refreshResult = await refreshToken();
     if (!refreshResult.ok) return refreshResult;
-    return request<T>(opts, refreshResult.value);
+    return mapResult(await request<T>(opts, refreshResult.value));
   }
 
-  return result;
+  return mapResult(result);
 }
 
-export async function apiGet<T>(path: string, params?: Record<string, string>): Promise<Result<T, string>> {
+export async function apiGet<T>(path: `/${string}`, params?: Record<string, string>): Promise<Result<T, string>> {
   return apiRequest<T>({ method: 'GET', path, params });
 }
 
-export async function apiPost<T>(path: string, body?: unknown, params?: Record<string, string>): Promise<Result<T, string>> {
+export async function apiPost<T>(path: `/${string}`, body?: unknown, params?: Record<string, string>): Promise<Result<T, string>> {
   return apiRequest<T>({ method: 'POST', path, body, params });
 }
 
-export async function apiPostRaw<T>(path: string, rawBody: string): Promise<Result<T, string>> {
+export async function apiPostRaw<T>(path: `/${string}`, rawBody: string): Promise<Result<T, string>> {
   return apiRequest<T>({ method: 'POST', path, rawBody });
 }

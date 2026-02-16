@@ -1,5 +1,6 @@
-import { REGION_URLS } from '../config.ts';
-import { ok, err, type Result, type AuthToken, type AuthConfig, type ApiResponse, type LoginData } from '../types.ts';
+import { REGION_URLS, ACCOUNT_TYPE_EMAIL } from '../config.ts';
+import { ok, err, formatError, isApiSuccess } from '../utils.ts';
+import type { Result, AuthToken, AuthConfig, ApiResponse, LoginData, Region } from '../types.ts';
 import { readStoredToken, writeStoredToken, readAuthConfig, clearStoredToken } from './store.ts';
 
 function md5(input: string): string {
@@ -11,18 +12,19 @@ function md5(input: string): string {
 let cachedToken: AuthToken | null = null;
 
 export async function login(config?: AuthConfig): Promise<Result<AuthToken, string>> {
-  const authConfig = config ?? readAuthConfig();
-  if (!config) {
-    const result = authConfig as Result<AuthConfig, string>;
-    if (!result.ok) return result;
+  let cfg: AuthConfig;
+  if (config) {
+    cfg = config;
+  } else {
+    const configResult = readAuthConfig();
+    if (!configResult.ok) return configResult;
+    cfg = configResult.value;
   }
-
-  const cfg = config ?? (authConfig as { ok: true; value: AuthConfig }).value;
   const baseUrl = REGION_URLS[cfg.region];
 
   const body = {
     account: cfg.email,
-    accountType: 2,
+    accountType: ACCOUNT_TYPE_EMAIL,
     pwd: md5(cfg.password),
   };
 
@@ -39,7 +41,7 @@ export async function login(config?: AuthConfig): Promise<Result<AuthToken, stri
 
     const data = (await response.json()) as ApiResponse<LoginData>;
 
-    if (data.result !== '0000' && data.apiCode !== '0000') {
+    if (!isApiSuccess(data)) {
       return err(`Login failed: ${data.message} (code: ${data.result || data.apiCode})`);
     }
 
@@ -53,12 +55,12 @@ export async function login(config?: AuthConfig): Promise<Result<AuthToken, stri
     const storeResult = writeStoredToken(token);
     if (!storeResult.ok) {
       // non-fatal — token works, just not persisted
-      console.error(`Warning: ${storeResult.error}`);
+      console.warn(`Warning: ${storeResult.error}`);
     }
 
     return ok(token);
   } catch (e) {
-    return err(`Login request failed: ${e}`);
+    return err(formatError('Login request failed', e));
   }
 }
 
@@ -90,4 +92,9 @@ export function clearToken(): void {
 export async function refreshToken(): Promise<Result<AuthToken, string>> {
   clearToken();
   return getToken();
+}
+
+export function getRegion(): Region {
+  const config = readAuthConfig();
+  return config.ok ? config.value.region : 'us';
 }
