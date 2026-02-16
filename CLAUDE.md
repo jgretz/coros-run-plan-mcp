@@ -1,18 +1,8 @@
-# CLAUDE.md
+# Coros
 
-**Important:** After reading this file, read `CLAUDE-WORKING.md` for ongoing work context and session notes.
+MCP server for connecting to the COROS Training Hub API. Enables Claude to create and manage scheduled exercises (runs/bikes) on the COROS calendar.
 
-## Imports
-
-#.claude/rules/typescript.md
-#.claude/rules/testing.md
-#.claude/rules/git.md
-#.claude/rules/integrations.md
-#.claude/rules/error-handling.md
-
-## Project
-
-Coros - MCP server for connecting to the COROS Training Hub API. Enables Claude to create and manage scheduled exercises (runs/bikes) on the COROS calendar.
+**After reading:** Check CLAUDE-WORKING.md for ongoing work context.
 
 ## Commands
 
@@ -22,20 +12,19 @@ bun run dev              # Dev server
 bun test                 # Run tests (uses bun:test)
 ```
 
-## Code Style
+## Project Rules
 
-- Prettier: single quotes, semicolons, trailing commas
-- ES modules only (import/export), destructure imports
-- Functional > OO > procedural
-- Prefer `function()` over `() =>`
-- Small composable functions
-- Comments only for "why", be terse
-
-## Rules
-
-- Do what's asked; nothing more, nothing less
-- Be terse in explanations
 - NEVER create files unless absolutely necessary
 - ALWAYS prefer editing existing files
 - NEVER create .md files unless explicitly requested
-- Record working notes and learnings to `CLAUDE-WORKING.md`
+- Record working notes to CLAUDE-WORKING.md
+
+## MCP Structure
+
+- Tools expose discrete actions (create, read, update, delete)
+- Use clear tool names and descriptions
+- Validate inputs with schemas
+- Return structured responses
+- Keep business logic separate from MCP tool handlers
+- API client handles protocol, tool handlers handle MCP framing
+- Use DI/configuration for API credentials
