@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { querySchedule, scheduleWorkout, unscheduleWorkout } from '../api/schedule.ts';
-import { SPORT_TYPE_LABELS, mapSportLabel } from '../config.ts';
+import { SPORT_TYPE_LABELS, parseSportType } from '../config.ts';
 
 const DaySchema = z.string().regex(/^\d{8}$/, 'Day must be YYYYMMDD format');
 
@@ -55,7 +55,7 @@ export function registerScheduleTools(server: McpServer) {
       },
     },
     async ({ programId, day, sportType }) => {
-      const sport = mapSportLabel(sportType);
+      const sport = parseSportType(sportType);
       const result = await scheduleWorkout(programId, day, sport);
       if (!result.ok) {
         return { content: [{ type: 'text' as const, text: `Failed to schedule workout: ${result.error}` }], isError: true };

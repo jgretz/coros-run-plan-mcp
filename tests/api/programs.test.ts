@@ -7,6 +7,7 @@ const mockRefreshToken = mock(() => Promise.resolve(ok({ accessToken: 'tok', use
 mock.module('../../src/auth/auth.ts', () => ({
   getToken: mockGetToken,
   refreshToken: mockRefreshToken,
+  getRegion: () => 'us' as const,
 }));
 
 mock.module('../../src/auth/store.ts', () => ({

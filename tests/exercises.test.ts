@@ -5,15 +5,15 @@ import {
   mapExerciseType,
   buildExercise,
   buildExercises,
-} from '../../src/tools/program-tools.ts';
-import { ExerciseType, TargetType, IntensityType, type ExerciseStep, type Result } from '../../src/types.ts';
+} from '../src/exercises.ts';
+import { ExerciseType, TargetType, IntensityType, type ExerciseStep, type Result } from '../src/types.ts';
 import {
   SORT_NO_BASE,
   SORT_NO_CHILD,
   EXERCISE_STATUS_ACTIVE,
   REST_TYPE_DEFAULT,
   DISTANCE_DISPLAY_MILES,
-} from '../../src/config.ts';
+} from '../src/config.ts';
 
 function makeStep(overrides?: Partial<ExerciseStep>): ExerciseStep {
   return {

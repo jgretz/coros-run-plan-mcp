@@ -60,6 +60,6 @@ export const EXERCISE_TEMPLATES: Record<SportType, SportExerciseTemplates> = {
   },
 } as const;
 
-export function mapSportLabel(s: 'run' | 'bike'): SportType {
+export function parseSportType(s: 'run' | 'bike'): SportType {
   return s === 'run' ? SportType.Run : SportType.Bike;
 }

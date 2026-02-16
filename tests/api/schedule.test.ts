@@ -38,6 +38,7 @@ const mockRefreshToken = mock(() => Promise.resolve(ok({ accessToken: 'tok', use
 mock.module('../../src/auth/auth.ts', () => ({
   getToken: mockGetToken,
   refreshToken: mockRefreshToken,
+  getRegion: () => 'us' as const,
 }));
 
 mock.module('../../src/auth/store.ts', () => ({
@@ -45,10 +46,12 @@ mock.module('../../src/auth/store.ts', () => ({
 }));
 
 // Mock programs.ts so getProgram is controlled
+// Spread real module to avoid clobbering exports used by other test files
+const realPrograms = await import('../../src/api/programs.ts');
 const mockGetProgram = mock(() => Promise.resolve(ok(makeProgram())));
 mock.module('../../src/api/programs.ts', () => ({
+  ...realPrograms,
   getProgram: mockGetProgram,
-  listPrograms: mock(() => Promise.resolve(ok([]))),
 }));
 
 const { scheduleWorkout, unscheduleWorkout } = await import('../../src/api/schedule.ts');
