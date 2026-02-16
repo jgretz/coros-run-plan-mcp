@@ -95,8 +95,8 @@ describe('schedule', () => {
       const fetchMock = globalThis.fetch as unknown as ReturnType<typeof mock>;
       const updateCall = fetchMock.mock.calls[1]!;
       const body = JSON.parse(updateCall[1]?.body as string);
-      expect(body.entities[0].idInPlan).toBe(11);
-      expect(body.programs[0].idInPlan).toBe(11);
+      expect(body.entities[0].idInPlan).toBe('11');
+      expect(body.programs[0].idInPlan).toBe('11');
     });
 
     it('should return err when plan query fails', async () => {

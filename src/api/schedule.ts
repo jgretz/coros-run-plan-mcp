@@ -22,7 +22,7 @@ export async function scheduleWorkout(
   if (!planResult.ok) return planResult;
 
   const plan = planResult.value;
-  const nextIdInPlan = Number(plan.maxPlanProgramId ?? '0') + 1;
+  const nextIdInPlan = String(BigInt(plan.maxPlanProgramId ?? '0') + 1n);
 
   // 2. get the full program details
   const programResult = await getProgram(programId);
