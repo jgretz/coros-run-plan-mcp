@@ -96,3 +96,9 @@ Add to `.mcp.json`:
 - **Sports**: run and bike only
 - **Units**: time targets in seconds, distance targets in centimeters
 - **Dates**: YYYYMMDD format (e.g. `20260216`)
+
+## Inspiration
+
+- [coros-workout-mcp](https://github.com/rowlando/coros-workout-mcp) — MCP server for COROS workouts
+- [coros-mcp-server](https://lobehub.com/mcp/yourusername-coros-mcp-server) — COROS MCP server on LobeHub
+- [coros-api](https://github.com/xballoy/coros-api) — Reverse-engineered COROS API client
