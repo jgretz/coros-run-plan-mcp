@@ -1,4 +1,4 @@
-# Coros
+# Coros MCP for Run & Bike workouts
 
 MCP server for the COROS Training Hub API. Create, manage, and schedule run/bike workouts from Claude.
 
@@ -19,11 +19,11 @@ bun install
 
 Set these environment variables:
 
-| Variable | Description | Required |
-|---|---|---|
-| `COROS_EMAIL` | COROS account email | Yes |
-| `COROS_PASSWORD` | COROS account password | Yes |
-| `COROS_REGION` | API region: `us`, `eu`, or `cn` (default: `us`) | No |
+| Variable         | Description                                     | Required |
+| ---------------- | ----------------------------------------------- | -------- |
+| `COROS_EMAIL`    | COROS account email                             | Yes      |
+| `COROS_PASSWORD` | COROS account password                          | Yes      |
+| `COROS_REGION`   | API region: `us`, `eu`, or `cn` (default: `us`) | No       |
 
 ### Claude Desktop
 
@@ -67,16 +67,16 @@ Add to `.mcp.json`:
 
 ## Available Tools
 
-| Tool | Description |
-|---|---|
-| `coros_login` | Authenticate with COROS Training Hub |
-| `list_workouts` | List saved workouts, optionally filtered by sport or name |
-| `get_workout` | Get full details of a saved workout by ID |
-| `create_workout` | Create a run or bike workout with warmup, intervals, steady blocks, and cooldown |
-| `delete_workout` | Delete one or more saved workouts by ID |
-| `get_calendar` | Get scheduled workouts for a date range |
-| `schedule_workout` | Add a saved workout to the calendar on a specific date |
-| `unschedule_workout` | Remove a scheduled workout from the calendar |
+| Tool                 | Description                                                                      |
+| -------------------- | -------------------------------------------------------------------------------- |
+| `coros_login`        | Authenticate with COROS Training Hub                                             |
+| `list_workouts`      | List saved workouts, optionally filtered by sport or name                        |
+| `get_workout`        | Get full details of a saved workout by ID                                        |
+| `create_workout`     | Create a run or bike workout with warmup, intervals, steady blocks, and cooldown |
+| `delete_workout`     | Delete one or more saved workouts by ID                                          |
+| `get_calendar`       | Get scheduled workouts for a date range                                          |
+| `schedule_workout`   | Add a saved workout to the calendar on a specific date                           |
+| `unschedule_workout` | Remove a scheduled workout from the calendar                                     |
 
 ## Usage Examples
 
