@@ -20,7 +20,7 @@ export const REGION_URLS: Record<Region, string> = {
   cn: 'https://teamcnapi.coros.com',
 } as const;
 
-export const SPORT_TYPE_LABELS: Record<number, string> = {
+export const SPORT_TYPE_LABELS: Record<SportType, string> = {
   1: 'Run',
   2: 'Bike',
 } as const;
@@ -43,7 +43,7 @@ type SportExerciseTemplates = {
   recovery: ExerciseTemplate;
 };
 
-export const EXERCISE_TEMPLATES: Record<number, SportExerciseTemplates> = {
+export const EXERCISE_TEMPLATES: Record<SportType, SportExerciseTemplates> = {
   // Run — originIds from actual API responses
   1: {
     warmup: { originId: '425895398452936705', name: 'T1120', overview: 'sid_run_warm_up_dist' },

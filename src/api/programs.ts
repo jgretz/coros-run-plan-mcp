@@ -1,9 +1,9 @@
 import { apiGet, apiPost, apiPostRaw } from './client.ts';
 import { QUERY_LIMIT, UNIT_IMPERIAL, PB_VERSION_PROGRAM } from '../config.ts';
 import { ok, err } from '../utils.ts';
-import type { Result, Program, ProgramSummary, Exercise } from '../types.ts';
+import type { Result, Program, ProgramSummary, Exercise, SportType } from '../types.ts';
 
-export async function listPrograms(sportType?: number): Promise<Result<ProgramSummary[], string>> {
+export async function listPrograms(sportType?: SportType): Promise<Result<ProgramSummary[], string>> {
   return apiPost<ProgramSummary[]>('/training/program/query', {
     name: '',
     supportRestExercise: 1,
@@ -20,7 +20,7 @@ export async function getProgram(id: string): Promise<Result<Program, string>> {
 // program/add returns data as a bare string ID
 export async function createProgram(program: {
   name: string;
-  sportType: number;
+  sportType: SportType;
   overview?: string;
   exercises: Exercise[];
 }): Promise<Result<string, string>> {

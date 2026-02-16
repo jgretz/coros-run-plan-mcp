@@ -1,7 +1,7 @@
 import { apiGet, apiPost } from './client.ts';
 import { PB_VERSION_SCHEDULE, SCHEDULE_STATUS_ADD, SCHEDULE_STATUS_DELETE } from '../config.ts';
 import { ok, err } from '../utils.ts';
-import type { Result, ScheduleQueryResponse, Program } from '../types.ts';
+import type { Result, ScheduleQueryResponse, Program, SportType } from '../types.ts';
 import { getProgram } from './programs.ts';
 
 export async function querySchedule(startDay: string, endDay: string): Promise<Result<ScheduleQueryResponse, string>> {
@@ -15,7 +15,7 @@ export async function querySchedule(startDay: string, endDay: string): Promise<R
 export async function scheduleWorkout(
   programId: string,
   day: string,
-  sportType: number,
+  sportType: SportType,
 ): Promise<Result<void, string>> {
   // 1. get the current plan to find maxPlanProgramId
   const planResult = await querySchedule(day, day);
