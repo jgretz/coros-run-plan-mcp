@@ -1,6 +1,6 @@
-import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
-import type { ScheduleQueryResponse, Program, ScheduleEntity } from '../../src/types.ts';
-import { registerScheduleTools } from '../../src/tools/schedule-tools.ts';
+import { describe, it, expect, mock, afterEach } from 'bun:test';
+import type { ScheduleQueryResponse, Program, ScheduleEntity } from '../../../src/types.ts';
+import { getCalendar } from '../../../src/tools/schedule/get-calendar.ts';
 
 function makeProgram(overrides?: Partial<Program>): Program {
   return {
@@ -43,21 +43,6 @@ function makePlan(overrides?: Partial<ScheduleQueryResponse>): ScheduleQueryResp
   };
 }
 
-type Handler = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[]; isError?: boolean }>;
-
-function captureHandlers(): Map<string, Handler> {
-  const handlers = new Map<string, Handler>();
-  const server = {
-    registerTool: (name: string, _config: unknown, handler: Handler) => {
-      handlers.set(name, handler);
-    },
-  };
-  registerScheduleTools(server as never);
-  return handlers;
-}
-
-const handlers = captureHandlers();
-const getCalendar = handlers.get('get_calendar')!;
 const originalFetch = globalThis.fetch;
 
 function apiResponse<T>(data: T) {
@@ -81,7 +66,7 @@ describe('get_calendar', () => {
     const plan = makePlan({ entities: [entity], programs: [program] });
     globalThis.fetch = mock(() => Promise.resolve(apiResponse(plan))) as unknown as typeof fetch;
 
-    const result = await getCalendar({ startDay: '20260216', endDay: '20260216' });
+    const result = await getCalendar.handler({ startDay: '20260216', endDay: '20260216' }, {} as never);
 
     const text = result.content[0]!.text;
     expect(text).toContain('Easy Run');
@@ -94,7 +79,7 @@ describe('get_calendar', () => {
     const plan = makePlan({ entities: [] });
     globalThis.fetch = mock(() => Promise.resolve(apiResponse(plan))) as unknown as typeof fetch;
 
-    const result = await getCalendar({ startDay: '20260216', endDay: '20260216' });
+    const result = await getCalendar.handler({ startDay: '20260216', endDay: '20260216' }, {} as never);
 
     expect(result.content[0]!.text).toContain('No scheduled workouts');
   });
@@ -115,7 +100,7 @@ describe('get_calendar', () => {
     const plan = makePlan({ entities: [entity], programs: [program] });
     globalThis.fetch = mock(() => Promise.resolve(apiResponse(plan))) as unknown as typeof fetch;
 
-    const result = await getCalendar({ startDay: '20260216', endDay: '20260216' });
+    const result = await getCalendar.handler({ startDay: '20260216', endDay: '20260216' }, {} as never);
 
     const text = result.content[0]!.text;
     expect(text).toContain('Sport Data Name');
@@ -129,7 +114,7 @@ describe('get_calendar', () => {
     const plan = makePlan({ entities: [entity], programs: [program] });
     globalThis.fetch = mock(() => Promise.resolve(apiResponse(plan))) as unknown as typeof fetch;
 
-    const result = await getCalendar({ startDay: '20260216', endDay: '20260216' });
+    const result = await getCalendar.handler({ startDay: '20260216', endDay: '20260216' }, {} as never);
 
     expect(result.content[0]!.text).toContain('[completed]');
   });
@@ -139,7 +124,7 @@ describe('get_calendar', () => {
     const plan = makePlan({ entities: [entity], programs: [] });
     globalThis.fetch = mock(() => Promise.resolve(apiResponse(plan))) as unknown as typeof fetch;
 
-    const result = await getCalendar({ startDay: '20260216', endDay: '20260216' });
+    const result = await getCalendar.handler({ startDay: '20260216', endDay: '20260216' }, {} as never);
 
     expect(result.content[0]!.text).toContain('Unknown');
   });
@@ -154,7 +139,7 @@ describe('get_calendar', () => {
       } as unknown as Response),
     ) as unknown as typeof fetch;
 
-    const result = await getCalendar({ startDay: '20260216', endDay: '20260216' });
+    const result = await getCalendar.handler({ startDay: '20260216', endDay: '20260216' }, {} as never);
 
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('Failed to get calendar');

@@ -1,20 +1,6 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
-import { registerAuthTools } from '../../src/tools/auth-tools.ts';
+import { corosLogin } from '../../../src/tools/auth/coros-login.ts';
 
-type Handler = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[]; isError?: boolean }>;
-
-function captureHandler(): Handler {
-  const handlers = new Map<string, Handler>();
-  const server = {
-    registerTool: (name: string, _config: unknown, handler: Handler) => {
-      handlers.set(name, handler);
-    },
-  };
-  registerAuthTools(server as never);
-  return handlers.get('coros_login')!;
-}
-
-const handle = captureHandler();
 const originalFetch = globalThis.fetch;
 const origEnv = { ...process.env };
 
@@ -47,7 +33,7 @@ describe('coros_login', () => {
       Promise.resolve(successResponse({ accessToken: 'tok', userId: 'u1' })),
     ) as unknown as typeof fetch;
 
-    const result = await handle({ email: 'a@b.com', password: 'secret', region: 'us' });
+    const result = await corosLogin.handler({ email: 'a@b.com', password: 'secret', region: 'us' }, {} as never);
 
     expect(result.content[0]!.text).toContain('u1');
     expect(result.isError).toBeUndefined();
@@ -58,7 +44,7 @@ describe('coros_login', () => {
       Promise.resolve(successResponse({ accessToken: 'tok', userId: 'u2' })),
     ) as unknown as typeof fetch;
 
-    const result = await handle({});
+    const result = await corosLogin.handler({}, {} as never);
 
     expect(result.content[0]!.text).toContain('u2');
     expect(result.isError).toBeUndefined();
@@ -74,7 +60,7 @@ describe('coros_login', () => {
       } as unknown as Response),
     ) as unknown as typeof fetch;
 
-    const result = await handle({ email: 'a@b.com', password: 'wrong', region: 'us' });
+    const result = await corosLogin.handler({ email: 'a@b.com', password: 'wrong', region: 'us' }, {} as never);
 
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('Login failed');
@@ -91,7 +77,7 @@ describe('coros_login', () => {
       } as unknown as Response),
     ) as unknown as typeof fetch;
 
-    const result = await handle({ email: 'a@b.com', password: 'wrong', region: 'us' });
+    const result = await corosLogin.handler({ email: 'a@b.com', password: 'wrong', region: 'us' }, {} as never);
 
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('Invalid password');
