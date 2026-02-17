@@ -25,6 +25,8 @@ Set these environment variables:
 | `COROS_PASSWORD` | COROS account password                          | Yes      |
 | `COROS_REGION`   | API region: `us`, `eu`, or `cn` (default: `us`) | No       |
 
+Clone the repo and replace `/path/to/coros` below with your actual clone location.
+
 ### Claude Desktop
 
 Add to `claude_desktop_config.json`:
@@ -33,8 +35,8 @@ Add to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "coros": {
-      "command": "bunx",
-      "args": ["--bun", "coros"],
+      "command": "bun",
+      "args": ["run", "/path/to/coros/src/index.ts"],
       "env": {
         "COROS_EMAIL": "your@email.com",
         "COROS_PASSWORD": "your-password",
@@ -53,8 +55,8 @@ Add to `.mcp.json`:
 {
   "mcpServers": {
     "coros": {
-      "command": "bunx",
-      "args": ["--bun", "coros"],
+      "command": "bun",
+      "args": ["run", "/path/to/coros/src/index.ts"],
       "env": {
         "COROS_EMAIL": "your@email.com",
         "COROS_PASSWORD": "your-password",
