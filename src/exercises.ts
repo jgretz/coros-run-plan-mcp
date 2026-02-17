@@ -48,8 +48,10 @@ export function mapExerciseType(t: string): ExerciseType {
   return map[t] ?? ExerciseType.Training;
 }
 
+// COROS API requires exercise IDs to be numeric strings
+let nextTempId = Date.now();
 function tempId(): string {
-  return crypto.randomUUID();
+  return String(nextTempId++);
 }
 
 export function buildExercise(
