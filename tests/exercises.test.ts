@@ -150,11 +150,11 @@ describe('buildExercises', () => {
     it('should produce 4 exercises with correct structure', () => {
       const exercises = unwrap(buildExercises(1, {
         warmup: makeStep({ type: 'warmup', targetType: 'time', targetValue: 600 }),
-        intervals: {
+        intervals: [{
           sets: 4,
           training: makeStep({ type: 'training', targetType: 'distance', targetValue: 100000 }),
           recovery: makeStep({ type: 'recovery', targetType: 'time', targetValue: 120 }),
-        },
+        }],
       }));
 
       expect(exercises).toHaveLength(4);
@@ -187,11 +187,11 @@ describe('buildExercises', () => {
   describe('intervals only', () => {
     it('should produce 3 exercises with correct linking', () => {
       const exercises = unwrap(buildExercises(1, {
-        intervals: {
+        intervals: [{
           sets: 3,
           training: makeStep({ type: 'training' }),
           recovery: makeStep({ type: 'recovery' }),
-        },
+        }],
       }));
 
       expect(exercises).toHaveLength(3);
@@ -222,6 +222,47 @@ describe('buildExercises', () => {
     });
   });
 
+  describe('multiple interval groups', () => {
+    it('should produce separate groups with independent linking', () => {
+      const exercises = unwrap(buildExercises(1, {
+        intervals: [
+          {
+            sets: 4,
+            training: makeStep({ type: 'training', targetType: 'distance', targetValue: 100000 }),
+            recovery: makeStep({ type: 'recovery', targetType: 'time', targetValue: 60 }),
+          },
+          {
+            sets: 2,
+            training: makeStep({ type: 'training', targetType: 'time', targetValue: 300 }),
+            recovery: makeStep({ type: 'recovery', targetType: 'time', targetValue: 120 }),
+          },
+        ],
+      }));
+
+      // group1 + training1 + recovery1 + group2 + training2 + recovery2 = 6
+      expect(exercises).toHaveLength(6);
+
+      const group1 = exercises[0]!;
+      expect(group1.isGroup).toBe(true);
+      expect(group1.sets).toBe(4);
+      expect(group1.sortNo).toBe(0);
+
+      expect(exercises[1]!.groupId).toBe(group1.id);
+      expect(exercises[2]!.groupId).toBe(group1.id);
+
+      const group2 = exercises[3]!;
+      expect(group2.isGroup).toBe(true);
+      expect(group2.sets).toBe(2);
+      expect(group2.sortNo).toBe(SORT_NO_BASE);
+
+      expect(exercises[4]!.groupId).toBe(group2.id);
+      expect(exercises[5]!.groupId).toBe(group2.id);
+
+      // groups have different IDs
+      expect(group1.id).not.toBe(group2.id);
+    });
+  });
+
   describe('empty input', () => {
     it('should return ok with empty array when no steps provided', () => {
       const exercises = unwrap(buildExercises(1, {}));
@@ -233,11 +274,11 @@ describe('buildExercises', () => {
     it('should order warmup, intervals, steady, cooldown correctly', () => {
       const exercises = unwrap(buildExercises(1, {
         warmup: makeStep({ type: 'warmup' }),
-        intervals: {
+        intervals: [{
           sets: 2,
           training: makeStep({ type: 'training' }),
           recovery: makeStep({ type: 'recovery' }),
-        },
+        }],
         steadyBlocks: [makeStep({ type: 'training' })],
         cooldown: makeStep({ type: 'cooldown' }),
       }));

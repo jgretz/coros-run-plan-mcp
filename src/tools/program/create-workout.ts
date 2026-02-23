@@ -17,9 +17,10 @@ export const createWorkout = defineTool({
     sportType: z.enum(['run', 'bike']).describe('Sport type'),
     description: z.string().optional().describe('Workout description'),
     warmup: ExerciseSchema.optional().describe('Warmup step'),
-    intervals: IntervalGroupSchema.optional().describe(
-      'Interval group (repeating training + recovery)',
-    ),
+    intervals: z
+      .array(IntervalGroupSchema)
+      .optional()
+      .describe('Interval groups (each is a repeating training + recovery pair)'),
     steadyBlocks: z
       .array(ExerciseSchema)
       .optional()

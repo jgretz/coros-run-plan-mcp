@@ -91,7 +91,7 @@ export function buildExercises(
   sportType: number,
   opts: {
     warmup?: ExerciseStep;
-    intervals?: IntervalGroup;
+    intervals?: IntervalGroup[];
     steadyBlocks?: ExerciseStep[];
     cooldown?: ExerciseStep;
   },
@@ -107,42 +107,44 @@ export function buildExercises(
   }
 
   if (opts.intervals) {
-    const groupSortNo = sortIdx * SORT_NO_BASE;
-    const groupId = tempId();
+    for (const interval of opts.intervals) {
+      const groupSortNo = sortIdx * SORT_NO_BASE;
+      const groupId = tempId();
 
-    exercises.push({
-      exerciseType: ExerciseType.Group,
-      originId: '0',
-      id: groupId,
-      name: '',
-      overview: '',
-      sortNo: groupSortNo,
-      targetType: TargetType.Open,
-      targetValue: 0,
-      intensityType: IntensityType.None,
-      intensityValue: 0,
-      intensityValueExtend: 0,
-      isGroup: true,
-      sets: opts.intervals.sets,
-      groupId: '0',
-      sportType,
-      status: EXERCISE_STATUS_ACTIVE,
-      restType: REST_TYPE_DEFAULT,
-      restValue: 0,
-      equipment: [...DEFAULT_EQUIPMENT],
-      part: [...DEFAULT_PART],
-      distanceDisplayUnit: DISTANCE_DISPLAY_MILES,
-    });
+      exercises.push({
+        exerciseType: ExerciseType.Group,
+        originId: '0',
+        id: groupId,
+        name: '',
+        overview: '',
+        sortNo: groupSortNo,
+        targetType: TargetType.Open,
+        targetValue: 0,
+        intensityType: IntensityType.None,
+        intensityValue: 0,
+        intensityValueExtend: 0,
+        isGroup: true,
+        sets: interval.sets,
+        groupId: '0',
+        sportType,
+        status: EXERCISE_STATUS_ACTIVE,
+        restType: REST_TYPE_DEFAULT,
+        restValue: 0,
+        equipment: [...DEFAULT_EQUIPMENT],
+        part: [...DEFAULT_PART],
+        distanceDisplayUnit: DISTANCE_DISPLAY_MILES,
+      });
 
-    const trainingResult = buildExercise(sportType, { ...opts.intervals.training, type: 'training' }, groupSortNo + SORT_NO_CHILD);
-    if (!trainingResult.ok) return trainingResult;
-    exercises.push({ ...trainingResult.value, groupId, isGroup: false });
+      const trainingResult = buildExercise(sportType, { ...interval.training, type: 'training' }, groupSortNo + SORT_NO_CHILD);
+      if (!trainingResult.ok) return trainingResult;
+      exercises.push({ ...trainingResult.value, groupId, isGroup: false });
 
-    const recoveryResult = buildExercise(sportType, { ...opts.intervals.recovery, type: 'recovery' }, groupSortNo + 2 * SORT_NO_CHILD);
-    if (!recoveryResult.ok) return recoveryResult;
-    exercises.push({ ...recoveryResult.value, groupId, isGroup: false });
+      const recoveryResult = buildExercise(sportType, { ...interval.recovery, type: 'recovery' }, groupSortNo + 2 * SORT_NO_CHILD);
+      if (!recoveryResult.ok) return recoveryResult;
+      exercises.push({ ...recoveryResult.value, groupId, isGroup: false });
 
-    sortIdx++;
+      sortIdx++;
+    }
   }
 
   if (opts.steadyBlocks) {
