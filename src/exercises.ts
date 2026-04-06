@@ -149,7 +149,8 @@ export function buildExercises(
 
   if (opts.steadyBlocks) {
     for (const block of opts.steadyBlocks) {
-      const result = buildExercise(sportType, { ...block, type: 'training' }, sortIdx * SORT_NO_BASE);
+      const stepType = block.type ?? 'training';
+      const result = buildExercise(sportType, { ...block, type: stepType }, sortIdx * SORT_NO_BASE);
       if (!result.ok) return result;
       exercises.push(result.value);
       sortIdx++;
