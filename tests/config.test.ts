@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { REGION_URLS, EXERCISE_TEMPLATES, SORT_NO_BASE, SORT_NO_CHILD, SPORT_TYPE_LABELS, parseSportType } from '../src/config.ts';
+import { REGION_URLS, EXERCISE_TEMPLATES, SORT_NO_BASE, SORT_NO_CHILD, sportLabel, parseSportType } from '../src/config.ts';
 
 describe('REGION_URLS', () => {
   it('should have US region', () => {
@@ -52,10 +52,28 @@ describe('sort constants', () => {
   });
 });
 
-describe('SPORT_TYPE_LABELS', () => {
-  it('should label sport types', () => {
-    expect(SPORT_TYPE_LABELS[1]).toBe('Run');
-    expect(SPORT_TYPE_LABELS[2]).toBe('Bike');
+describe('sportLabel', () => {
+  it('should use consistent names for workout and activity sport IDs', () => {
+    // workout sport types and their activity counterparts share a label
+    expect(sportLabel(1)).toBe('Running');
+    expect(sportLabel(100)).toBe('Running');
+    expect(sportLabel(2)).toBe('Cycling');
+  });
+
+  it('should use specific activity labels for variant sport IDs', () => {
+    expect(sportLabel(101)).toBe('Indoor Running');
+    expect(sportLabel(102)).toBe('Trail Running');
+    expect(sportLabel(200)).toBe('Road Bike');
+    expect(sportLabel(201)).toBe('Indoor Cycling');
+    expect(sportLabel(204)).toBe('MTB');
+  });
+
+  it('should return "Unknown" for undefined', () => {
+    expect(sportLabel(undefined)).toBe('Unknown');
+  });
+
+  it('should fall back to "Sport N" for unknown IDs', () => {
+    expect(sportLabel(9999)).toBe('Sport 9999');
   });
 });
 

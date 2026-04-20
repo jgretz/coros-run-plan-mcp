@@ -65,6 +65,10 @@ describe('mapIntensityType', () => {
     expect(mapIntensityType('pace')).toBe(IntensityType.Pace);
   });
 
+  it('should map power to Power', () => {
+    expect(mapIntensityType('power')).toBe(IntensityType.Power);
+  });
+
   it('should default to None for unknown values', () => {
     expect(mapIntensityType('unknown')).toBe(IntensityType.None);
   });
@@ -142,6 +146,30 @@ describe('buildExercise', () => {
     const ex = unwrap(buildExercise(2, makeStep({ type: 'training' }), 0));
     expect(ex.name).toBe('T4000');
     expect(ex.overview).toBe('sid_bike_training');
+  });
+
+  it('should pass through custom step name', () => {
+    const ex = unwrap(buildExercise(2, makeStep({ type: 'training', name: 'Sweetspot Block' }), 0));
+    expect(ex.name).toBe('Sweetspot Block');
+    expect(ex.overview).toBe('sid_bike_training');
+  });
+
+  it('should fall back to template name when custom name omitted', () => {
+    const ex = unwrap(buildExercise(2, makeStep({ type: 'warmup' }), 0));
+    expect(ex.name).toBe('T1120');
+  });
+
+  it('should map power intensity with low and high watts', () => {
+    const ex = unwrap(
+      buildExercise(
+        2,
+        makeStep({ type: 'training', intensityType: 'power', intensityValue: 265, intensityValueExtend: 285 }),
+        0,
+      ),
+    );
+    expect(ex.intensityType).toBe(IntensityType.Power);
+    expect(ex.intensityValue).toBe(265);
+    expect(ex.intensityValueExtend).toBe(285);
   });
 });
 

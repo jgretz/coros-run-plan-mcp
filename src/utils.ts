@@ -5,7 +5,7 @@ import type {
   Exercise,
   ExerciseType,
 } from './types.ts';
-import { SPORT_TYPE_LABELS } from './config.ts';
+import { sportLabel } from './config.ts';
 
 export function ok<T>(value: T): Result<T, never> {
   return { ok: true, value };
@@ -47,7 +47,9 @@ const TARGET_TYPE_LABELS: Record<number, string> = {
   5: 'distance',
 };
 
-function formatDistance(meters: number): string {
+// COROS encodes exercise distance targets in centimeters.
+function formatDistance(centimeters: number): string {
+  const meters = centimeters / 100;
   return meters >= 1000
     ? `${(meters / 1000).toFixed(1)}km`
     : `${Math.round(meters)}m`;
@@ -84,6 +86,11 @@ function formatIntensity(ex: Exercise): string {
       ? ` @ ${formatPace(ex.intensityValue)}-${formatPace(ex.intensityValueExtend)}`
       : ` @ ${formatPace(ex.intensityValue)}`;
   }
+  if (ex.intensityType === 6) {
+    return ex.intensityValueExtend
+      ? ` @ ${ex.intensityValue}-${ex.intensityValueExtend}W`
+      : ` @ ${ex.intensityValue}W`;
+  }
   return '';
 }
 
@@ -94,38 +101,106 @@ function formatExercise(ex: Exercise): string {
   return `${type}: ${target}${intensity}`;
 }
 
+const PROGRAM_DROP_KEYS = new Set([
+  'exerciseBarChart',
+  'headPic',
+  'profile',
+  'sex',
+  'pbVersion',
+  'version',
+  'status',
+  'createTimestamp',
+  'thirdPartyId',
+  'access',
+  'deleted',
+  'authorId',
+  'nickname',
+]);
+
+const EXERCISE_DROP_KEYS = new Set([
+  'videoInfos',
+  'videoUrl',
+  'videoUrlArrStr',
+  'coverUrlArrStr',
+  'thumbnailUrl',
+  'sourceUrl',
+  'animationId',
+  'access',
+  'deleted',
+  'defaultOrder',
+  'status',
+  'createTimestamp',
+  'userId',
+  'muscle',
+  'muscleRelevance',
+  'part',
+  'equipment',
+  'isDefaultAdd',
+  'intensityCustom',
+  'intensityDisplayUnit',
+  'isIntensityPercent',
+]);
+
+const OVERVIEW_PREFIXES = ['sid_run_', 'sid_bike_', 'sid_strength_', 'sid_'];
+
+function humanizeOverview(overview: unknown): unknown {
+  if (typeof overview !== 'string') return overview;
+  for (const prefix of OVERVIEW_PREFIXES) {
+    if (overview.startsWith(prefix)) {
+      const stripped = overview.slice(prefix.length).replace(/_/g, ' ');
+      return stripped.charAt(0).toUpperCase() + stripped.slice(1);
+    }
+  }
+  return overview;
+}
+
+function dropKeys<T extends Record<string, unknown>>(obj: T, drop: Set<string>): Partial<T> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (!drop.has(k)) out[k] = v;
+  }
+  return out as Partial<T>;
+}
+
+export function stripProgram(p: Program): Partial<Program> {
+  const base = dropKeys(p as unknown as Record<string, unknown>, PROGRAM_DROP_KEYS);
+  const exercises = p.exercises?.map((ex) => {
+    const stripped = dropKeys(ex as unknown as Record<string, unknown>, EXERCISE_DROP_KEYS);
+    if ('overview' in stripped) stripped.overview = humanizeOverview(stripped.overview);
+    return stripped;
+  });
+  return { ...(base as unknown as Partial<Program>), ...(exercises ? { exercises: exercises as unknown as Exercise[] } : {}) };
+}
+
+// COROS uses groupId "0" to mean "no group" for standalone exercises.
+function isStandalone(ex: Exercise): boolean {
+  return !ex.groupId || ex.groupId === '0';
+}
+
 export function formatProgram(p: Program): string {
-  const sport = SPORT_TYPE_LABELS[p.sportType] ?? 'Unknown';
+  const sport = sportLabel(p.sportType);
   const load = p.essence || p.trainingLoad;
-  const header = `${p.name} (${sport}, load: ${load})`;
+  const headerLines = [`${p.name} (${sport}, load: ${load})`];
+  if (p.overview) headerLines.push(p.overview);
+  const header = headerLines.join('\n');
 
   const exercises = p.exercises ?? [];
   if (exercises.length === 0) return header;
 
-  // group exercises by groupId
-  const grouped = new Map<string, Exercise[]>();
-  const topLevel: (Exercise | { group: Exercise; children: Exercise[] })[] = [];
-
+  // preserve API order; render standalone exercises and group parents in place.
+  const lines: string[] = [];
   for (const ex of exercises) {
     if (ex.isGroup) {
       const children = exercises.filter((e) => e.groupId === ex.id);
-      grouped.set(ex.id ?? '', children);
-      topLevel.push({ group: ex, children });
-    } else if (!ex.groupId) {
-      topLevel.push(ex);
-    }
-  }
-
-  const lines = topLevel.map((item) => {
-    if ('group' in item) {
-      const sets = item.group.sets ?? 1;
-      const parts = item.children
+      const sets = ex.sets ?? 1;
+      const parts = children
         .map((c) => `${formatTarget(c)}${formatIntensity(c)}`)
         .join(' + ');
-      return `- ${sets}x: ${parts}`;
+      lines.push(`- ${sets}x: ${parts}`);
+    } else if (isStandalone(ex)) {
+      lines.push(`- ${formatExercise(ex)}`);
     }
-    return `- ${formatExercise(item)}`;
-  });
+  }
 
   return `${header}\n${lines.join('\n')}`;
 }

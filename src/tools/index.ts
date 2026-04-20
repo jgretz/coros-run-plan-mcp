@@ -8,6 +8,9 @@ import { deleteWorkout } from './program/delete-workout.ts';
 import { getCalendar } from './schedule/get-calendar.ts';
 import { scheduleWorkoutTool } from './schedule/schedule-workout.ts';
 import { unscheduleWorkoutTool } from './schedule/unschedule-workout.ts';
+import { listActivities } from './training-data/list-activities.ts';
+import { getActivity } from './training-data/get-activity.ts';
+import { getDailyMetrics } from './training-data/get-daily-metrics.ts';
 
 export const tools: McpTool[] = [
   corosLogin,
@@ -18,6 +21,9 @@ export const tools: McpTool[] = [
   getCalendar,
   scheduleWorkoutTool,
   unscheduleWorkoutTool,
+  listActivities,
+  getActivity,
+  getDailyMetrics,
 ];
 
 export function registerTools(server: McpServer): void {

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { defineTool } from '../types.ts';
 import { listPrograms } from '../../api/programs.ts';
-import { SPORT_TYPE_LABELS, parseSportType } from '../../config.ts';
+import { sportLabel, parseSportType } from '../../config.ts';
 import { capOutput } from '../../utils.ts';
 
 export const listWorkouts = defineTool({
@@ -62,7 +62,7 @@ export const listWorkouts = defineTool({
 
     const lines = page.map(
       (p) =>
-        `- ${p.name} (${SPORT_TYPE_LABELS[p.sportType] ?? 'Unknown'}, ID: ${p.id}, load: ${p.essence || p.trainingLoad})`,
+        `- ${p.name} (${sportLabel(p.sportType)}, ID: ${p.id}, load: ${p.essence || p.trainingLoad})`,
     );
 
     return {

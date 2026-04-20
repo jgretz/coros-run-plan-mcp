@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { defineTool } from '../types.ts';
 import { getProgram } from '../../api/programs.ts';
-import { capOutput, formatProgram } from '../../utils.ts';
+import { capOutput, formatProgram, stripProgram } from '../../utils.ts';
 
 export const getWorkout = defineTool({
   name: 'get_workout',
@@ -32,7 +32,7 @@ export const getWorkout = defineTool({
 
     const text =
       detail === 'full'
-        ? JSON.stringify(result.value)
+        ? JSON.stringify(stripProgram(result.value))
         : formatProgram(result.value);
 
     return {

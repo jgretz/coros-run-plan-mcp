@@ -25,6 +25,7 @@ type RequestOptions = {
   path: `/${string}`;
   body?: unknown;
   rawBody?: string; // pre-serialized JSON, bypasses JSON.stringify
+  formBody?: Record<string, string | number>;
   params?: Record<string, string>;
 };
 
@@ -38,11 +39,24 @@ async function request<T>(opts: RequestOptions, token: AuthToken): Promise<Resul
     }
   }
 
+  const headers = authHeaders(token);
+  let body: string | undefined;
+  if (opts.formBody) {
+    const form = new URLSearchParams();
+    for (const [k, v] of Object.entries(opts.formBody)) form.set(k, String(v));
+    body = form.toString();
+    headers['Content-Type'] = 'application/x-www-form-urlencoded';
+  } else if (opts.rawBody) {
+    body = opts.rawBody;
+  } else if (opts.body) {
+    body = JSON.stringify(opts.body);
+  }
+
   try {
     const response = await fetch(url.toString(), {
       method: opts.method,
-      headers: authHeaders(token),
-      body: opts.rawBody ?? (opts.body ? JSON.stringify(opts.body) : undefined),
+      headers,
+      body,
     });
 
     if (!response.ok) {
@@ -93,4 +107,11 @@ export async function apiPost<T>(path: `/${string}`, body?: unknown, params?: Re
 
 export async function apiPostRaw<T>(path: `/${string}`, rawBody: string): Promise<Result<T, string>> {
   return apiRequest<T>({ method: 'POST', path, rawBody });
+}
+
+export async function apiPostForm<T>(
+  path: `/${string}`,
+  formBody: Record<string, string | number>,
+): Promise<Result<T, string>> {
+  return apiRequest<T>({ method: 'POST', path, formBody });
 }

@@ -104,8 +104,32 @@ describe('get_calendar', () => {
 
     const text = result.content[0]!.text;
     expect(text).toContain('Sport Data Name');
-    expect(text).toContain('Bike');
+    expect(text).toContain('Cycling');
     expect(text).toContain('load: 80');
+  });
+
+  it('should render activity sport types (e.g. 100 Running) on completed entries', async () => {
+    const program = makeProgram({ idInPlan: 5, sportType: 1 });
+    const entity = makeEntity({
+      planProgramId: '5',
+      labelId: 'label-1',
+      sportData: {
+        name: 'Morning Run',
+        sportType: 100, // activity sport type
+        distance: 5000,
+        duration: 1800,
+        trainingLoad: 50,
+        happenDay: 20260216,
+      },
+    });
+    const plan = makePlan({ entities: [entity], programs: [program] });
+    globalThis.fetch = mock(() => Promise.resolve(apiResponse(plan))) as unknown as typeof fetch;
+
+    const result = await getCalendar.handler({ startDay: '20260216', endDay: '20260216' }, {} as never);
+
+    const text = result.content[0]!.text;
+    expect(text).toContain('Running');
+    expect(text).not.toContain('type 100');
   });
 
   it('should show [completed] when labelId is present', async () => {

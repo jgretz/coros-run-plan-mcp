@@ -20,10 +20,32 @@ export const REGION_URLS: Record<Region, string> = {
   cn: 'https://teamcnapi.coros.com',
 } as const;
 
-export const SPORT_TYPE_LABELS: Record<SportType, string> = {
-  1: 'Run',
-  2: 'Bike',
-} as const;
+// Unified sport-name table — covers both workout authoring IDs (1, 2) and
+// activity IDs (100, 200, ...). Workout 1 and activity 100 both render as
+// "Running" so a scheduled run and its completed version carry the same label.
+export const SPORT_NAMES: Record<number, string> = {
+  1: 'Running',
+  2: 'Cycling',
+  100: 'Running',
+  101: 'Indoor Running',
+  102: 'Trail Running',
+  103: 'Track Running',
+  104: 'Hiking',
+  200: 'Road Bike',
+  201: 'Indoor Cycling',
+  203: 'Gravel Bike',
+  204: 'MTB',
+  400: 'Cardio',
+  402: 'Strength',
+  403: 'Yoga',
+  900: 'Walking',
+  9807: 'Bike Commute',
+};
+
+export function sportLabel(sportType: number | undefined): string {
+  if (sportType == null) return 'Unknown';
+  return SPORT_NAMES[sportType] ?? `Sport ${sportType}`;
+}
 
 // sortNo spacing: top-level exercises use 16777216 increments, children use 65536
 export const SORT_NO_BASE = 16777216;

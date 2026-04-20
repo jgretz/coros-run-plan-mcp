@@ -58,6 +58,7 @@ export const IntensityType = {
   None: 0,
   HeartRate: 2,
   Pace: 3,
+  Power: 6,
 } as const;
 
 export type IntensityType = (typeof IntensityType)[keyof typeof IntensityType];
@@ -151,12 +152,124 @@ export type LoginData = {
   userId: string;
 };
 
+// Activity summary — from /activity/query
+export type ActivitySummary = {
+  activityId: string;
+  name?: string;
+  sportType?: number;
+  sportName?: string;
+  startTime?: string;
+  endTime?: string;
+  durationSeconds?: number;
+  distanceMeters?: number;
+  avgHr?: number;
+  maxHr?: number;
+  calories?: number;
+  trainingLoad?: number;
+  avgPower?: number;
+  normalizedPower?: number;
+  elevationGain?: number;
+};
+
+// Daily metric — merged from /analyse/dayDetail/query and /analyse/query
+export type DailyMetric = {
+  date: string;
+  avgSleepHrv?: number;
+  baseline?: number;
+  rhr?: number;
+  trainingLoad?: number;
+  trainingLoadRatio?: number;
+  tiredRate?: number;
+  ati?: number;
+  cti?: number;
+  distanceMeters?: number;
+  durationSeconds?: number;
+  vo2max?: number;
+  lthr?: number;
+  ltsp?: number;
+  staminaLevel?: number;
+  staminaLevel7d?: number;
+};
+
+// Raw shapes from COROS API — used internally by training-data parsers
+export type RawActivity = {
+  labelId?: string | number;
+  name?: string;
+  remark?: string;
+  sportType?: number;
+  startTime?: string | number;
+  endTime?: string | number;
+  totalTime?: number;
+  distance?: number;
+  totalDistance?: number;
+  avgHr?: number;
+  maxHr?: number;
+  calorie?: number;
+  totalCalorie?: number;
+  trainingLoad?: number;
+  avgPower?: number;
+  np?: number;
+  ascent?: number;
+  totalAscent?: number;
+  elevationGain?: number;
+};
+
+export type ActivityListResponse = {
+  dataList?: RawActivity[];
+  list?: RawActivity[];
+  totalCount?: number;
+  count?: number;
+};
+
+export type RawDailyDetail = {
+  happenDay?: number | string;
+  avgSleepHrv?: number;
+  sleepHrvBase?: number;
+  rhr?: number;
+  trainingLoad?: number;
+  trainingLoadRatio?: number;
+  tiredRateNew?: number;
+  ati?: number;
+  cti?: number;
+  distance?: number;
+  duration?: number;
+  vo2max?: number;
+  lthr?: number;
+  ltsp?: number;
+  staminaLevel?: number;
+  staminaLevel7d?: number;
+};
+
+export type DailyDetailResponse = {
+  dayList?: RawDailyDetail[];
+};
+
+export type AnalyseResponse = {
+  t7dayList?: RawDailyDetail[];
+};
+
+export type DashboardResponse = {
+  summaryInfo?: {
+    sleepHrvData?: {
+      happenDay?: number | string;
+      avgSleepHrv?: number;
+      sleepHrvBase?: number;
+      sleepHrvList?: Array<{
+        happenDay?: number | string;
+        avgSleepHrv?: number;
+        sleepHrvBase?: number;
+      }>;
+    };
+  };
+};
+
 // Exercise step input (user-facing)
 export type ExerciseStep = {
   type: 'warmup' | 'training' | 'cooldown' | 'recovery';
+  name?: string;
   targetType: 'open' | 'time' | 'distance';
   targetValue: number;
-  intensityType?: 'none' | 'heart_rate' | 'pace';
+  intensityType?: 'none' | 'heart_rate' | 'pace' | 'power';
   intensityValue?: number;
   intensityValueExtend?: number;
 };

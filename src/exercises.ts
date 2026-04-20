@@ -14,10 +14,11 @@ import { ExerciseType, TargetType, IntensityType, type Exercise, type ExerciseSt
 
 export const ExerciseSchema = z.object({
   type: z.enum(['warmup', 'training', 'cooldown', 'recovery']).describe('Exercise step type'),
+  name: z.string().optional().describe('Optional step label shown on the device (e.g. "Tempo Block", "Sweetspot"). Defaults to the template name for the type.'),
   targetType: z.enum(['open', 'time', 'distance']).describe('Target type: open (no target), time (seconds), distance (centimeters)'),
   targetValue: z.number().default(0).describe('Target value: seconds for time, centimeters for distance, 0 for open'),
-  intensityType: z.enum(['none', 'heart_rate', 'pace']).optional().describe('Intensity type'),
-  intensityValue: z.number().optional().describe('Low intensity value: BPM for heart_rate, centiseconds/km * 1000 for pace'),
+  intensityType: z.enum(['none', 'heart_rate', 'pace', 'power']).optional().describe('Intensity type'),
+  intensityValue: z.number().optional().describe('Low intensity value: BPM for heart_rate, centiseconds/km * 1000 for pace, watts for power'),
   intensityValueExtend: z.number().optional().describe('High intensity value (same units as intensityValue)'),
 });
 
@@ -34,7 +35,11 @@ export function mapTargetType(t: string): TargetType {
 
 export function mapIntensityType(t?: string): IntensityType {
   if (!t || t === 'none') return IntensityType.None;
-  const map: Record<string, IntensityType> = { heart_rate: IntensityType.HeartRate, pace: IntensityType.Pace };
+  const map: Record<string, IntensityType> = {
+    heart_rate: IntensityType.HeartRate,
+    pace: IntensityType.Pace,
+    power: IntensityType.Power,
+  };
   return map[t] ?? IntensityType.None;
 }
 
@@ -66,7 +71,7 @@ export function buildExercise(
     exerciseType: mapExerciseType(step.type),
     originId: String(template.originId),
     id: tempId(),
-    name: template.name,
+    name: step.name ?? template.name,
     overview: template.overview,
     sortNo,
     targetType: mapTargetType(step.targetType),

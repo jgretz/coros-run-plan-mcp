@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { defineTool } from '../types.ts';
 import { DaySchema } from '../schemas.ts';
 import { querySchedule } from '../../api/schedule.ts';
-import { SPORT_TYPE_LABELS } from '../../config.ts';
+import { sportLabel } from '../../config.ts';
 import { capOutput } from '../../utils.ts';
 
 export const getCalendar = defineTool({
@@ -57,15 +57,11 @@ export const getCalendar = defineTool({
       const program = programByIdInPlan.get(String(entity.planProgramId));
       const name = entity.sportData?.name ?? program?.name ?? 'Unknown';
       const sport = entity.sportData?.sportType ?? program?.sportType;
-      const sportLabel =
-        sport != null
-          ? (SPORT_TYPE_LABELS[sport as keyof typeof SPORT_TYPE_LABELS] ??
-            `type ${sport}`)
-          : 'Unknown';
+      const label = sportLabel(sport);
       const load =
         entity.sportData?.trainingLoad ?? program?.trainingLoad ?? 0;
       const completed = entity.labelId ? ' [completed]' : '';
-      return `- ${entity.happenDay}: ${name} (${sportLabel}, load: ${load}, entity ID: ${entity.id})${completed}`;
+      return `- ${entity.happenDay}: ${name} (${label}, load: ${load}, entity ID: ${entity.id})${completed}`;
     });
 
     const header =
