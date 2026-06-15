@@ -6,6 +6,8 @@ primary_region = 'ewr'
 [env]
   NODE_ENV = "production"
   PORT = "3000"
+  OAUTH_ISSUER = "https://joshgretz-mcp-auth.fly.dev"
+  MCP_RESOURCE = "https://joshgretz-coros-mcp.fly.dev/mcp"
 
 [http_service]
   internal_port = 3000
