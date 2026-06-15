@@ -1,10 +1,10 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
 import { ok, err } from '../../src/utils.ts';
 
-const mockReadStoredToken = mock(() => err('No stored token found') as ReturnType<typeof import('../../src/auth/store.ts').readStoredToken>);
-const mockWriteStoredToken = mock(() => ok(undefined) as ReturnType<typeof import('../../src/auth/store.ts').writeStoredToken>);
+const mockReadStoredToken = mock(() => Promise.resolve(err('No stored token found')) as ReturnType<typeof import('../../src/auth/store.ts').readStoredToken>);
+const mockWriteStoredToken = mock(() => Promise.resolve(ok(undefined)) as ReturnType<typeof import('../../src/auth/store.ts').writeStoredToken>);
 const mockReadAuthConfig = mock(() => ok({ email: 'a@b.com', password: 'p', region: 'us' as const }) as ReturnType<typeof import('../../src/auth/store.ts').readAuthConfig>);
-const mockClearStoredToken = mock(() => {});
+const mockClearStoredToken = mock(() => Promise.resolve());
 
 mock.module('../../src/auth/store.ts', () => ({
   readStoredToken: mockReadStoredToken,
@@ -28,16 +28,16 @@ function successResponse(data: unknown) {
 }
 
 describe('auth', () => {
-  beforeEach(() => {
-    clearToken();
+  beforeEach(async () => {
+    await clearToken();
     mockReadStoredToken.mockReset();
     mockWriteStoredToken.mockReset();
     mockReadAuthConfig.mockReset();
     mockClearStoredToken.mockReset();
-    mockReadStoredToken.mockImplementation(() => err('No stored token found'));
-    mockWriteStoredToken.mockImplementation(() => ok(undefined));
+    mockReadStoredToken.mockImplementation(() => Promise.resolve(err('No stored token found')));
+    mockWriteStoredToken.mockImplementation(() => Promise.resolve(ok(undefined)));
     mockReadAuthConfig.mockImplementation(() => ok({ email: 'a@b.com', password: 'p', region: 'us' as const }));
-    mockClearStoredToken.mockImplementation(() => {});
+    mockClearStoredToken.mockImplementation(() => Promise.resolve());
   });
 
   afterEach(() => {
@@ -125,7 +125,7 @@ describe('auth', () => {
     });
 
     it('should fall back to stored token', async () => {
-      mockReadStoredToken.mockImplementation(() => ok({ accessToken: 'stored', userId: 'u2' }));
+      mockReadStoredToken.mockImplementation(() => Promise.resolve(ok({ accessToken: 'stored', userId: 'u2' })));
 
       const result = await getToken();
 
@@ -134,7 +134,7 @@ describe('auth', () => {
     });
 
     it('should auto-login when no stored token', async () => {
-      mockReadStoredToken.mockImplementation(() => err('No stored token found'));
+      mockReadStoredToken.mockImplementation(() => Promise.resolve(err('No stored token found')));
       const token = { accessToken: 'auto', userId: 'u3' };
       globalThis.fetch = mock(() => Promise.resolve(successResponse(token))) as unknown as typeof fetch;
 

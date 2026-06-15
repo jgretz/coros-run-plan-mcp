@@ -1,47 +1,48 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync, unlinkSync } from 'node:fs';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
+import { eq } from 'drizzle-orm';
 import { ok, err, formatError } from '../utils.ts';
 import type { Result, AuthToken, AuthConfig } from '../types.ts';
+import { getDb } from '../db/index.ts';
+import { corosTokens } from '../db/schema.ts';
 
-const CONFIG_DIR = join(homedir(), '.config', 'coros-mcp');
-const TOKEN_PATH = join(CONFIG_DIR, 'auth.json');
+const TOKEN_ID = 'default';
 
-export function readStoredToken(): Result<AuthToken, string> {
-  if (!existsSync(TOKEN_PATH)) {
-    return err('No stored token found');
-  }
-
+export async function readStoredToken(): Promise<Result<AuthToken, string>> {
   try {
-    const raw = readFileSync(TOKEN_PATH, 'utf-8');
-    const data = JSON.parse(raw) as AuthToken;
-    if (!data.accessToken || !data.userId) {
+    const rows = await getDb()
+      .select()
+      .from(corosTokens)
+      .where(eq(corosTokens.id, TOKEN_ID))
+      .limit(1);
+
+    const row = rows[0];
+    if (!row) return err('No stored token found');
+    if (!row.token.accessToken || !row.token.userId) {
       return err('Stored token is malformed');
     }
-    return ok(data);
+    return ok(row.token);
   } catch (e) {
     return err(formatError('Failed to read stored token', e));
   }
 }
 
-export function writeStoredToken(token: AuthToken): Result<void, string> {
+export async function writeStoredToken(token: AuthToken): Promise<Result<void, string>> {
   try {
-    if (!existsSync(CONFIG_DIR)) {
-      mkdirSync(CONFIG_DIR, { recursive: true });
-    }
-    writeFileSync(TOKEN_PATH, JSON.stringify(token, null, 2), 'utf-8');
-    chmodSync(TOKEN_PATH, 0o600);
+    await getDb()
+      .insert(corosTokens)
+      .values({ id: TOKEN_ID, token })
+      .onConflictDoUpdate({
+        target: corosTokens.id,
+        set: { token, updatedAt: new Date() },
+      });
     return ok(undefined);
   } catch (e) {
     return err(formatError('Failed to write token', e));
   }
 }
 
-export function clearStoredToken(): void {
+export async function clearStoredToken(): Promise<void> {
   try {
-    if (existsSync(TOKEN_PATH)) {
-      unlinkSync(TOKEN_PATH);
-    }
+    await getDb().delete(corosTokens).where(eq(corosTokens.id, TOKEN_ID));
   } catch (e) {
     console.warn('Failed to clear stored token:', e);
   }

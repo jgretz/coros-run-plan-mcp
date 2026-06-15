@@ -6,16 +6,23 @@
   "private": true,
   "scripts": {
     "dev": "bun run src/index.ts",
-    "test": "bun test"
+    "start": "bun run src/http.ts",
+    "test": "bun test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "drizzle-kit": "^0.31.6"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
+    "drizzle-orm": "^0.44.6",
+    "hono": "^4.8.5",
+    "postgres": "^3.4.7",
     "zod": "^4.3.6"
   }
 }

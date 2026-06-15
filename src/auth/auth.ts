@@ -52,7 +52,7 @@ export async function login(config?: AuthConfig): Promise<Result<AuthToken, stri
 
     cachedToken = token;
 
-    const storeResult = writeStoredToken(token);
+    const storeResult = await writeStoredToken(token);
     if (!storeResult.ok) {
       // non-fatal — token works, just not persisted
       console.warn(`Warning: ${storeResult.error}`);
@@ -69,7 +69,7 @@ export async function getToken(): Promise<Result<AuthToken, string>> {
   if (cachedToken) return ok(cachedToken);
 
   // 2. Try stored token
-  const stored = readStoredToken();
+  const stored = await readStoredToken();
   if (stored.ok) {
     cachedToken = stored.value;
     return stored;
@@ -84,13 +84,13 @@ export async function getToken(): Promise<Result<AuthToken, string>> {
   return login(configResult.value);
 }
 
-export function clearToken(): void {
+export async function clearToken(): Promise<void> {
   cachedToken = null;
-  clearStoredToken();
+  await clearStoredToken();
 }
 
 export async function refreshToken(): Promise<Result<AuthToken, string>> {
-  clearToken();
+  await clearToken();
   return getToken();
 }
 

@@ -1,13 +1,7 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { registerTools } from './tools/index.ts';
+import { createServer } from './server.ts';
 
-const server = new McpServer({
-  name: 'coros',
-  version: '0.1.0',
-});
-
-registerTools(server);
-
+// Local dev entry — stdio transport. The hosted entry is src/http.ts.
+const server = createServer();
 const transport = new StdioServerTransport();
 await server.connect(transport);
